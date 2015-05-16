@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # vim: set fileencoding=utf-8 :
 from __future__ import absolute_import
 
@@ -5,8 +6,8 @@ import urwid
 import urwid.raw_display
 import urwid.web_display
 
-from entry import get_command_and_last_arg
-from man import help_me_man
+from helpmeman.entry import get_command_and_last_arg
+from helpmeman.man import help_me_man
 
 
 # we might want to use a custom walker to simplify the logic
