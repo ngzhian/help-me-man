@@ -1,9 +1,23 @@
 # Help me man!
 
-Man pages that provides a view of what the argument means
+Run commands with instant lookup of what arguments mean from the man pages
+
+![Help me man! demo gif](demo.gif)
+
+## Why
+
+When running certain commands from the shell, e.g. `grep`, it can be pretty hard to remember
+what a certain argument does. (how does the `--exclude` option for `grep work`?)
+
+One way is to fire up `man`, look for the argument, exit the pager, and continue typing. That's just distracting.
+
+Another way is to fire up a tmux pane at the side, look up the argument, switch back to your original pane, and continue.
+This is slightly better, but when you need to look up multiple arguments it can be quite a hassle switching panes constantly.
+
+Help me man is a small python script that allows you to compose your commands, and instantly grabs the argument description from
+the man pages.
 
 ## TODO
-1. more description
-2. gif demo
-3. instructions to use
-4. package and upload on pypi
+
+1. instructions to use
+2. package and upload on pypi
