@@ -1,0 +1,9 @@
+# Help me man!
+
+Man pages that provides a view of what the argument means
+
+## TODO
+1. more description
+2. gif demo
+3. instructions to use
+4. package and upload on pypi
