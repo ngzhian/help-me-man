@@ -9,12 +9,34 @@ from entry import get_command_and_last_arg
 from man import help_me_man
 
 
-def edit_handler(dest, widget, newtext):
-    """Handler called whenever the edit box changes"""
-    cmd, arg = get_command_and_last_arg(newtext)
-    help_text = help_me_man(cmd, arg)
-    dest.set_text(help_text)
+# we might want to use a custom walker to simplify the logic
+# of scrolling to the line we want
+class ManWalker(urwid.ListWalker):
+    def __init__(self):
+        self.man_page = ['asdf'] * 100
+        self.focus = (0, 1)
 
+    def _get_at_pos(self, pos):
+        return urwid.Text(self.man_page[pos[1]]), pos
+
+    def get_focus(self):
+        return self._get_at_pos(self.focus)
+
+    def set_focus(self, focus):
+        self.focus = focus
+        self._modified()
+
+    def get_next(self, start_from):
+        i, j = start_from
+        focus = j , j + 1
+        return self._get_at_pos(focus)
+
+    def get_prev(self, start_from):
+        i, j = start_from
+        if i == 0:
+            return None, None
+        focus = i - 1, i
+        return self._get_at_pos(focus)
 
 def main():
     text_header = (
@@ -25,12 +47,9 @@ def main():
 
     edit = urwid.Edit('>>> ')
 
-    # impt: connect changes in the edit line to man output
-    key = urwid.connect_signal(
-        edit, 'change', edit_handler, weak_args=[man_output])
-
     footer = urwid.AttrWrap(urwid.Text(text_header), 'footer')
     listbox = urwid.ListBox(urwid.SimpleListWalker([man_output]))
+    # listbox = urwid.ListBox(ManWalker())
     body = urwid.Pile([
          ('fixed', 2, urwid.Filler(edit)),
          ('weight', 70, listbox),
@@ -46,9 +65,45 @@ def main():
 
     screen = urwid.raw_display.Screen()
 
+    # potentially buggy implementation of scrolling
+    def scroll_to_line(line):
+        frame.footer.original_widget = urwid.Text(str(line))
+        old_inside, total = listbox.inset_fraction
+        new_inside = None
+        c, r = screen.get_cols_rows()
+        if line < old_inside:
+            while line < old_inside and old_inside > 0:
+                listbox.keypress((c, r), 'up')
+                new_inside, total = listbox.inset_fraction
+                old_inside = new_inside
+        else:
+            while old_inside < line - 1 and old_inside != new_inside:
+                old_inside = new_inside
+                listbox.keypress((c, r), 'down')
+                new_inside, total = listbox.inset_fraction
+
+    def edit_handler(dest, widget, newtext):
+        """Handler called whenever the edit box changes"""
+        cmd, arg = get_command_and_last_arg(newtext)
+        # help_text = help_me_man(cmd, arg)
+        lineno, man_page = help_me_man(cmd, arg)
+        dest.set_text(man_page)
+        scroll_to_line(lineno)
+
+    # impt: connect changes in the edit line to man output
+    urwid.connect_signal(
+        edit, 'change', edit_handler, weak_args=[man_output])
+
+    # this manages page up and page down when user is still typing
     def unhandled(key):
+        c, r = screen.get_cols_rows()
         if key in ['f1']:
             raise urwid.ExitMainLoop()
+        if key in ['page up']:
+            listbox.keypress((c, r), 'page up')
+        if key in ['page down']:
+            listbox.keypress((c, r), 'page down')
+
 
     urwid.MainLoop(frame, palette, screen,
         unhandled_input=unhandled).run()

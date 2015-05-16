@@ -17,7 +17,7 @@ def man(cmd):
     """Get man page as a chunk of utf-8 text"""
     try:
         return subprocess.check_output(['man', cmd]).decode('utf-8')
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         return ''
 
 
@@ -42,16 +42,28 @@ def get_para_of_option(option, man):
     return capture_paragraph_from_lines(dropwhile(irrelevant, lines))
 
 
+def get_line_number_of_option(option, man):
+    lines = man.split('\n')
+    begins_with = lambda l: l.strip().startswith(option)
+    for i, line in enumerate(lines):
+        if begins_with(line):
+            return i
+    else:
+        return 0
+
+
 def help_me_man(cmd, option):
     if not cmd:
-        return ''
+        return 0, ''
 
     man_page = man(cmd)
     if not man_page:
-        return ''
+        return 0, ''
 
     if not option:
-        return man_page
+        return 0, man_page
 
-    para = get_para_of_option(option, man_page)
-    return '\n'.join(para)
+    # para = get_para_of_option(option, man_page)
+    # return '\n'.join(para)
+    lineno = get_line_number_of_option(option, man_page)
+    return lineno, man_page
