@@ -18,6 +18,9 @@ setup(
     author_email='ngzhian@gmail.com',
     url='https://github.com/ngzhian/help-me-man',
     packages=['helpmeman'],
+    install_requires=[
+        "urwid>=1.3.0",
+    ],
     classifiers=[
         'Development Status :: 1 - Planning',
         'Environment :: Console :: Curses',
