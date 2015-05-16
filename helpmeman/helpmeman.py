@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf-8 :
 from __future__ import absolute_import
+import shlex, subprocess
 
 import urwid
 import urwid.raw_display
@@ -39,6 +40,26 @@ class ManWalker(urwid.ListWalker):
         focus = i - 1, i
         return self._get_at_pos(focus)
 
+
+class ManEditWidget(urwid.Edit):
+    def __init__(self, *args, **kwargs):
+        super(ManEditWidget, self).__init__(*args, **kwargs)
+
+    def keypress(self, position, key):
+        if key == 'enter':
+            args = self.get_edit_text()
+            subprocess.Popen(
+                args,
+                stdout=self._pipe,
+                shell=True)
+            return True
+        else:
+            return super(ManEditWidget, self).keypress(position, key)
+
+    def set_pipe(self, fd):
+        self._pipe = fd
+
+
 def main():
     text_header = (
         u"F1 exits. Up/Down arrow to change focus, Pg Up/Down to scroll")
@@ -46,7 +67,8 @@ def main():
         u"Start typing shell command, e.g. cat. "
         u"This will recognize arguments like -h, --help.")
 
-    edit = urwid.Edit('>>> ')
+    # edit = urwid.Edit(('editfc', '>>>'), '')
+    edit = ManEditWidget(('editfc', '>>>'), '')
 
     footer = urwid.AttrWrap(urwid.Text(text_header), 'footer')
     listbox = urwid.ListBox(urwid.SimpleListWalker([man_output]))
@@ -68,7 +90,6 @@ def main():
 
     # potentially buggy implementation of scrolling
     def scroll_to_line(line):
-        frame.footer.original_widget = urwid.Text(str(line))
         old_inside, total = listbox.inset_fraction
         new_inside = None
         c, r = screen.get_cols_rows()
@@ -100,14 +121,23 @@ def main():
         c, r = screen.get_cols_rows()
         if key in ['f1']:
             raise urwid.ExitMainLoop()
-        if key in ['page up']:
+        elif key in ['page up']:
             listbox.keypress((c, r), 'page up')
-        if key in ['page down']:
+        elif key in ['page down']:
             listbox.keypress((c, r), 'page down')
+        # elif key in ['enter']:
+            # raise urwid.ExitMainLoop()
 
+    loop = urwid.MainLoop(frame, palette, screen,
+        unhandled_input=unhandled)
 
-    urwid.MainLoop(frame, palette, screen,
-        unhandled_input=unhandled).run()
+    def received_output(data):
+        man_output.set_text(data)
+
+    write_fd = loop.watch_pipe(received_output)
+    edit.set_pipe(write_fd)
+
+    loop.run()
 
 if __name__ == '__main__':
     main()
